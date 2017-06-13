@@ -4,8 +4,9 @@
 #include "core/wave.h"
 
 
-Wave::Wave(cv::Mat matrix, vector<Point> points) {
+Wave::Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton) {
     this->matrix = matrix;
+    this->skeleton = skeleton;
 
     this->points1 = points;
 
@@ -22,9 +23,7 @@ Wave::Wave(cv::Mat matrix, vector<Point> points) {
     gOptions.Memory = 10;
     gOptions.SetIntencity = 0.5;
 
-    for (auto point : points) {
-        matrix.at<uchar>(point) = this->_id;
-    }
+    this->placeNode();
 
     /* оптимизируем */
 //    points1.reserve(1000);
@@ -105,12 +104,18 @@ bool MetaWave::next() {
     }
     this->_waves = newWaveList;
 
+    for (int i = 0; i < this->_waves.size(); ++i) {
+        auto &wave = this->_waves[i];
+        wave->markCurrentPointsAsVisited((uchar) (i + 1));
+    }
+
     return hasNext;
 }
 
-MetaWave::MetaWave(cv::Mat image, vector<Point> points) {
+MetaWave::MetaWave(cv::Mat image, vector<Point> points, Skeleton *skeleton) {
     image.copyTo(this->image);
-    Wave *wave = new Wave(this->image, points);
+    Wave *wave = new Wave(this->image, points, skeleton);
+    wave->markCurrentPointsAsVisited(1);
     this->_waves.push_back(wave);
 }
 
@@ -119,6 +124,12 @@ const vector<Wave *> &MetaWave::waves() {
 }
 
 bool Wave::next(uchar waveId, vector<Wave *> &waves) {
+    ++this->stepNumber;
+
+    if (this->currentPoints->size() <= 0) {
+        return false;
+    }
+
     bool hasNext = false;
 
     this->nextPoints->clear();
@@ -135,10 +146,13 @@ bool Wave::next(uchar waveId, vector<Wave *> &waves) {
             if (cell_value == 0) {
                 this->nextPoints->push_back(neighboorPoint);
                 hasNext = true;
-            } else if (cell_value < 255) {
+            } else if (cell_value < 255 && cell_value != waveId) {
                 // waves collison, add another wave points to current wave
                 auto another_wave = waves[cell_value - 1];
-                waveIdsToAdd.push_back(cell_value);
+
+                if (this->lastNode && another_wave->lastNode)
+                    this->lastNode->bind(another_wave->lastNode);
+
                 this->currentPoints->insert(this->currentPoints->end(),
                                             another_wave->currentPoints->begin(),
                                             another_wave->currentPoints->begin());
@@ -149,6 +163,13 @@ bool Wave::next(uchar waveId, vector<Wave *> &waves) {
                 another_wave->currentPoints->clear();
             }
         }
+    }
+
+    // if the end of wave
+    if (!hasNext)
+        this->placeNode();
+    else if (this->stepNumber % 10 == 0) {
+        this->placeNode();
     }
 
     this->currentPoints = currentPoints == &this->points1 ? &this->points2 : &this->points1;
@@ -192,16 +213,56 @@ vector<Wave *> Wave::split() {
             waves.push_back(this);
             return waves;
         } else {
-            waves.push_back(new Wave(this->matrix, newWavePoints));
+            Wave *wave = new Wave(this->matrix, newWavePoints, this->skeleton);
+            waves.push_back(wave);
         }
     } while (points.size() > 0);
     return waves;
 }
 
-Node Node::bind(Node *node) {
+Node *Wave::placeNode() {
+    auto centerPoint = this->getCenterPoint();
+    auto node = this->skeleton->addNode(centerPoint);
+    if (this->lastNode)
+        this->lastNode->bind(node);
+    this->lastNode = node;
+    return node;
+}
+
+Point Wave::getCenterPoint() {
+    Point sumPoint(0, 0);
+    for (auto point : *this->currentPoints) {
+        sumPoint += point;
+    }
+    sumPoint.x /= this->currentPoints->size();
+    sumPoint.y /= this->currentPoints->size();
+    return sumPoint;
+}
+
+void Wave::markCurrentPointsAsVisited(uchar waveId) {
+    for (auto point : *this->currentPoints) {
+        matrix.at<uchar>(point) = waveId;
+    }
+}
+
+void Node::bind(Node *node) {
     this->nodes.push_back(node);
     node->nodes.push_back(this);
 }
 
-Node::Node(Point &_point) : point(_point.x, _point.y) {
+
+Node::Node(Point &_point, Skeleton *_skeleton) : point(_point.x, _point.y), skeleton(_skeleton) {
+}
+
+Node *Skeleton::addNode(Point &point) {
+    auto node = new Node(point, this);
+    nodes.push_back(node);
+    return node;
+}
+
+Skeleton::~Skeleton() {
+    for (auto node : nodes) {
+        delete node;
+    }
+    nodes.clear();
 }

@@ -50,19 +50,33 @@ public:
     bool isNeighboor(Point &point);
 };
 
-struct Node {
+struct Node;
+
+class Skeleton {
+public:
+    vector<Node *> nodes;
+
+    Node *addNode(Point &point);
+
+    ~Skeleton();
+};
+
+class Node {
+private:
+    Skeleton *skeleton;
+public:
     Point point;
     vector<Node *> nodes;
 
-    Node bind(Node *node);
+    void bind(Node *node);
 
-    Node(Point &point);
+    Node(Point &point, Skeleton *skeleton);
 };
 
 class Wave /*волна*/
 {
 private:
-    uchar _id = 1;
+    int stepNumber = 0;
     WaveInfo gWaveInfo;
 
     SkeletizationOptions gOptions;
@@ -72,23 +86,32 @@ private:
     vector<Point> *currentPoints;
     vector<Point> *nextPoints;
     vector<uchar> waveIdsToAdd;
+
+    Node *lastNode = nullptr;
+    Skeleton *skeleton = nullptr;
+
 public:
 
-    Wave(cv::Mat matrix, vector<Point> points);
+    Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton);
 
     const vector<Point> &points();
 
     bool next(uchar waveId, vector<Wave *> &waves);
 
+    Node *placeNode();
+    Point getCenterPoint();
+
     vector<Wave *> split();
+    void markCurrentPointsAsVisited(uchar waveId);
 };
 
 class MetaWave {
 private:
     cv::Mat image;
     vector<Wave *> _waves;
+    Skeleton* skeleton;
 public:
-    MetaWave(cv::Mat image, vector<Point> points);
+    MetaWave(cv::Mat image, vector<Point> points, Skeleton* skeleton);
 
     const vector<Wave *> &waves();
 

@@ -10,7 +10,7 @@ WaveProcessor::WaveProcessor(cv::Mat image) {
 }
 
 
-void WaveProcessor::process(function<void(MetaWave)>onMetaWaveNext) {
+Skeleton* WaveProcessor::process(function<void(MetaWave)>onMetaWaveNext) {
     cv::Mat grey;
     cv::cvtColor(image, grey, CV_RGB2GRAY);
     CV_Assert(grey.depth() == CV_8U);
@@ -36,9 +36,8 @@ void WaveProcessor::process(function<void(MetaWave)>onMetaWaveNext) {
         }
     }
 
-
-    MetaWave metaWave(grey, firstWavePoints);
-    while (metaWave.next()) {
-
-    }
+    Skeleton *skeleton = new Skeleton();
+    MetaWave metaWave(grey, firstWavePoints, skeleton);
+    while (metaWave.next()) {}
+    return skeleton;
 }
