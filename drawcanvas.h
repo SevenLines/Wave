@@ -33,6 +33,8 @@ private:
 
 public:
     explicit DrawCanvas(QWidget *parent = nullptr);
+    QGraphicsScene * getScene();
+    QImage image();
 
 
 signals:

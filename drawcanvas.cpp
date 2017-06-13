@@ -116,3 +116,11 @@ void DrawCanvas::_initScene() {
 //    this->penSizeItem = this->scene.addEllipse();
 }
 
+QImage DrawCanvas::image() {
+    return pixmapItem->pixmap().toImage();
+}
+
+QGraphicsScene* DrawCanvas::getScene() {
+    return &this->scene;
+}
+
