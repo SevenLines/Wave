@@ -5,14 +5,16 @@
 #include <QGraphicsPixmapItem>
 #include <QWidget>
 #include <graphics_items/QGraphicsCursorItem.h>
+#include <core/wave.h>
 
 class DrawCanvas : public QGraphicsView {
 Q_OBJECT
 
 private:
-    QGraphicsScene scene;
+    QGraphicsScene _scene;
     QGraphicsPixmapItem *pixmapItem = nullptr;
     QGraphicsCursorItem *penSizeItem = nullptr;
+    QGraphicsItemGroup* skeletonNode;
 
     enum class DrawingState {
         NONE, DRAWING, PEN_RESIZING
@@ -34,6 +36,7 @@ private:
 public:
     explicit DrawCanvas(QWidget *parent = nullptr);
     QGraphicsScene * getScene();
+    void setSkeleton(Skeleton *skeleton);
     QImage image();
 
 

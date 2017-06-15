@@ -185,7 +185,7 @@ bool Wave::next(vector<Wave *> &waves) {
     // if the end of wave
 //    if (!hasNext)
 //        this->placeNode();
-    if (this->stepNumber % 10 == 0) {
+    if (this->stepNumber % 5 == 0) {
         this->placeNode();
     }
 

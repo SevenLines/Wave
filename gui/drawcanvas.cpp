@@ -29,7 +29,7 @@ void DrawCanvas::setImageSize(int width, int height) {
         painter->drawImage(QPoint(0, 0), image);
     }
 
-    scene.setSceneRect(0, 0, width, height);
+    _scene.setSceneRect(0, 0, width, height);
 
     this->pixmapItem->setPixmap(QPixmap::fromImage(newImage));
 }
@@ -70,7 +70,7 @@ void DrawCanvas::mouseMoveEvent(QMouseEvent *event) {
             painter.setPen(pen);
             painter.drawLine(this->drawingState.lastPosition, currentPosition);
             this->drawingState.lines.append(
-                    this->scene.addLine(
+                    this->_scene.addLine(
                             QLineF(this->drawingState.lastPosition, currentPosition),
                             pen
                     )
@@ -101,26 +101,46 @@ void DrawCanvas::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void DrawCanvas::_initScene() {
-    this->setScene(&this->scene);
-    this->scene.setBackgroundBrush(QBrush(QColor(Qt::black)));
+    this->setScene(&this->_scene);
+    this->_scene.setBackgroundBrush(QBrush(QColor(Qt::black)));
 
     this->pixmapItem = new QGraphicsPixmapItem(0);
-    this->scene.addItem(this->pixmapItem);
+    this->_scene.addItem(this->pixmapItem);
     this->drawingState.pen = QPen(QBrush(Qt::black), 10,
                                   Qt::PenStyle::SolidLine,
                                   Qt::PenCapStyle::RoundCap,
                                   Qt::PenJoinStyle::RoundJoin);
 
     this->penSizeItem = new QGraphicsCursorItem(QRectF(0, 0, 10, 10));
-    this->scene.addItem(this->penSizeItem);
-//    this->penSizeItem = this->scene.addEllipse();
+    this->_scene.addItem(this->penSizeItem);
+    skeletonNode = new QGraphicsItemGroup();
+    this->_scene.addItem(this->skeletonNode);
+//    this->penSizeItem = this->_scene.addEllipse();
 }
 
 QImage DrawCanvas::image() {
     return pixmapItem->pixmap().toImage();
 }
 
-QGraphicsScene* DrawCanvas::getScene() {
-    return &this->scene;
+QGraphicsScene *DrawCanvas::getScene() {
+    return &this->_scene;
+}
+
+void DrawCanvas::setSkeleton(Skeleton *skeleton) {
+    for (auto child : skeletonNode->childItems()) {
+        delete child;
+    }
+    for (auto node : skeleton->nodes) {
+        auto item = new QGraphicsEllipseItem(
+                QRect(node->point.x - 2, node->point.y - 2, 4, 4)
+        );
+        item->setPen(QPen(QBrush(Qt::yellow), 2));
+        this->skeletonNode->addToGroup(item);
+        for (auto another_node : node->nodes) {
+            auto line = new QGraphicsLineItem(node->point.x, node->point.y, another_node->point.x, another_node->point.y);
+            line->setPen(QPen(QBrush(Qt::red), 2));
+            this->skeletonNode->addToGroup(line);
+        }
+    }
 }
 

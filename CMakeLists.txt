@@ -24,9 +24,9 @@ set(CORE_SOURCES core/wave.cpp
 # Tell CMake to create the helloworld executable
 add_executable(wave
         main.cpp
-        mainwindow.cpp
+        gui/mainwindow.cpp
         graphics_items/QGraphicsCursorItem.cpp
-        drawcanvas.cpp
+        gui/drawcanvas.cpp
         ${CORE_SOURCES})
 
 add_executable(

@@ -61,7 +61,7 @@
   <customwidget>
    <class>DrawCanvas</class>
    <extends>QGraphicsView</extends>
-   <header>drawcanvas.h</header>
+   <header>gui/drawcanvas.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
