@@ -10,10 +10,17 @@ WaveProcessor::WaveProcessor(cv::Mat image) {
 }
 
 
-Skeleton* WaveProcessor::process(function<void(MetaWave)>onMetaWaveNext) {
+Skeleton* WaveProcessor::process() {
     cv::Mat grey;
     cv::cvtColor(image, grey, CV_RGB2GRAY);
-    CV_Assert(grey.depth() == CV_8U);
+
+    cv::Mat lookUpTable(1, 256, CV_8U);
+    uchar* p = lookUpTable.data;
+    for( int i = 0; i < 256; ++i)
+        p[i] = (uchar) (i == 255 ? 0 : 1);
+    cv::LUT(grey, lookUpTable, grey);
+    grey.convertTo(grey, CV_32S);
+
     Point startPosition(-1, -1);
 
     bool found = false;
@@ -21,8 +28,8 @@ Skeleton* WaveProcessor::process(function<void(MetaWave)>onMetaWaveNext) {
 
     for (int i = 0; i < grey.rows; ++i) {
         for (int j = 0; j < grey.cols; ++j) {
-            uchar color = grey.at<uchar>(i, j);
-            if (color == 0) {
+            int cell_value = grey.at<int>(i, j);
+            if (cell_value == WAVE_FILLED_CELL_VALUE) {
                 std::cout << "found";
                 startPosition.x = j;
                 startPosition.y = i;
@@ -36,8 +43,12 @@ Skeleton* WaveProcessor::process(function<void(MetaWave)>onMetaWaveNext) {
         }
     }
 
-    Skeleton *skeleton = new Skeleton();
-    MetaWave metaWave(grey, firstWavePoints, skeleton);
-    while (metaWave.next()) {}
-    return skeleton;
+    if (found) {
+        Skeleton *skeleton = new Skeleton();
+        MetaWave metaWave(grey, firstWavePoints, skeleton);
+        metaWave.onWaveNext = this->onWaveNext;
+        metaWave.onWavePointsCleared = this->onWavePointsCleared;
+        while (metaWave.next()) {}
+        return skeleton;
+    }
 }

@@ -13,7 +13,9 @@ class WaveProcessor {
 public:
     WaveProcessor(cv::Mat image);
 
-    Skeleton * process(function<void(MetaWave)>onMetaWaveNext= nullptr);
+    Skeleton * process();
+    function<void(Wave *wave)>onWaveNext= nullptr;
+    function<void(Wave *wave)>onWavePointsCleared= nullptr;
 
     cv::Mat image;
 };

@@ -4,12 +4,16 @@
 #include <vector>
 #include <list>
 #include <opencv2/opencv.hpp>
+#include <functional>
 
 using namespace std;
 
 enum class WaveStyle {
     Square, Diamond
 };
+
+const int WAVE_EMPTY_CELL_VALUE = 0;
+const int WAVE_FILLED_CELL_VALUE = 1;
 
 struct SkeletizationOptions {
 
@@ -47,7 +51,7 @@ public:
 
     Point getNeighboor(int i);
 
-    bool isNeighboor(Point &point);
+    bool isNeighboor(Point &point, int delta=1);
 };
 
 struct Node;
@@ -73,45 +77,57 @@ public:
     Node(Point &point, Skeleton *skeleton);
 };
 
+
+class MetaWave;
+
 class Wave /*волна*/
 {
 private:
+    static unsigned int WaveCounter;
+
     int stepNumber = 0;
     WaveInfo gWaveInfo;
-
     SkeletizationOptions gOptions;
+
     cv::Mat matrix;
     vector<Point> points1;
     vector<Point> points2;
     vector<Point> *currentPoints;
     vector<Point> *nextPoints;
-    vector<uchar> waveIdsToAdd;
-
+    vector<int> waveIdsToAdd;
+    MetaWave *metaWave;
     Node *lastNode = nullptr;
-    Skeleton *skeleton = nullptr;
 
+    Skeleton *skeleton = nullptr;
 public:
 
-    Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton);
+    int id;
+
+    Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton, MetaWave *metaWave);
 
     const vector<Point> &points();
 
-    bool next(uchar waveId, vector<Wave *> &waves);
+    bool next(vector<Wave *> &waves);
 
     Node *placeNode();
     Point getCenterPoint();
 
     vector<Wave *> split();
-    void markCurrentPointsAsVisited(uchar waveId);
+    void markCurrentPointsAsVisited();
+    void markCurrentPointsAsCleared();
+
 };
 
 class MetaWave {
 private:
+    int step = 0;
     cv::Mat image;
     vector<Wave *> _waves;
     Skeleton* skeleton;
 public:
     MetaWave(cv::Mat image, vector<Point> points, Skeleton* skeleton);
+    std::function<void(Wave *wave)> onWaveNext = nullptr;
+    std::function<void(Wave *wave)> onWavePointsCleared = nullptr;
 
     const vector<Wave *> &waves();
 

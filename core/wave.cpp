@@ -3,10 +3,13 @@
 #include <algorithm>
 #include "core/wave.h"
 
+unsigned int Wave::WaveCounter = 2;
 
-Wave::Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton) {
+Wave::Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton, MetaWave *metaWave) {
+    this->id = ++Wave::WaveCounter;
     this->matrix = matrix;
     this->skeleton = skeleton;
+    this->metaWave = metaWave;
 
     this->points1 = points;
 
@@ -22,8 +25,6 @@ Wave::Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton) {
     gOptions.MaxDeviation = 0.5;
     gOptions.Memory = 10;
     gOptions.SetIntencity = 0.5;
-
-    this->placeNode();
 
     /* оптимизируем */
 //    points1.reserve(1000);
@@ -73,18 +74,22 @@ Point Point::getNeighboor(int i) {
     }
 }
 
-bool Point::isNeighboor(Point &point) {
+bool Point::isNeighboor(Point &point, int delta) {
     if (this->x == point.x && this->y == point.y)
         return false;
-    return abs(this->x - point.x) <= 1 && abs(this->y - point.y) <= 1;
+    return abs(this->x - point.x) <= delta && abs(this->y - point.y) <= delta;
 }
 
 bool MetaWave::next() {
     bool hasNext = false;
+    ++this->step;
     // made another wave iteration
     for (int i = 0; i < this->_waves.size(); ++i) {
         auto &wave = this->_waves[i];
-        hasNext |= wave->next((uchar) (i + 1), this->_waves);
+        hasNext |= wave->next(this->_waves);
+        if (this->onWaveNext) {
+            this->onWaveNext(wave);
+        }
     }
 
     // join waves
@@ -93,7 +98,7 @@ bool MetaWave::next() {
     vector<Wave *> newWaveList;
     for (auto wave : this->_waves) {
         auto waves = wave->split();
-        newWaveList.insert(newWaveList.begin(), waves.begin(), waves.end());
+        newWaveList.insert(newWaveList.end(), waves.begin(), waves.end());
     }
 
     // remove all unused waves
@@ -102,11 +107,13 @@ bool MetaWave::next() {
             delete wave;
         }
     }
+    this->_waves.clear();
     this->_waves = newWaveList;
 
     for (int i = 0; i < this->_waves.size(); ++i) {
         auto &wave = this->_waves[i];
-        wave->markCurrentPointsAsVisited((uchar) (i + 1));
+        wave->markCurrentPointsAsCleared();
+        //wave->markCurrentPointsAsVisited((int) (i + 1));
     }
 
     return hasNext;
@@ -114,8 +121,9 @@ bool MetaWave::next() {
 
 MetaWave::MetaWave(cv::Mat image, vector<Point> points, Skeleton *skeleton) {
     image.copyTo(this->image);
-    Wave *wave = new Wave(this->image, points, skeleton);
-    wave->markCurrentPointsAsVisited(1);
+    Wave *wave = new Wave(this->image, points, skeleton, this);
+    wave->placeNode();
+    wave->markCurrentPointsAsCleared();
     this->_waves.push_back(wave);
 }
 
@@ -123,7 +131,7 @@ const vector<Wave *> &MetaWave::waves() {
     return this->_waves;
 }
 
-bool Wave::next(uchar waveId, vector<Wave *> &waves) {
+bool Wave::next(vector<Wave *> &waves) {
     ++this->stepNumber;
 
     if (this->currentPoints->size() <= 0) {
@@ -141,35 +149,50 @@ bool Wave::next(uchar waveId, vector<Wave *> &waves) {
                 continue;
 
             auto neighboorPoint = point.getNeighboor(i);
-            auto cell_value = this->matrix.at<uchar>(neighboorPoint);
-            this->matrix.at<uchar>(neighboorPoint) = waveId;
-            if (cell_value == 0) {
+            auto cell_value = this->matrix.at<int>(neighboorPoint);
+
+
+            if (cell_value == WAVE_EMPTY_CELL_VALUE) {
+                continue;
+            } else if (cell_value == WAVE_FILLED_CELL_VALUE) {
+                this->matrix.at<int>(neighboorPoint) = this->id;
                 this->nextPoints->push_back(neighboorPoint);
                 hasNext = true;
-            } else if (cell_value < 255 && cell_value != waveId) {
+            } else if (cell_value != this->id) {
                 // waves collison, add another wave points to current wave
-                auto another_wave = waves[cell_value - 1];
+                for (auto another_wave : waves) {
+                    if (another_wave->id == cell_value) {
+                        if (another_wave->currentPoints->size() > 0) {
 
-                if (this->lastNode && another_wave->lastNode)
-                    this->lastNode->bind(another_wave->lastNode);
+                            if (this->lastNode && another_wave->lastNode)
+                                this->lastNode->bind(another_wave->lastNode);
 
-                this->currentPoints->insert(this->currentPoints->end(),
-                                            another_wave->currentPoints->begin(),
-                                            another_wave->currentPoints->begin());
-                // mark all it's points as visited
-                for (auto pnt : *another_wave->currentPoints) {
-                    this->matrix.at<uchar>(pnt) = waveId;
+                            this->currentPoints->insert(this->currentPoints->end(),
+                                                        another_wave->currentPoints->begin(),
+                                                        another_wave->currentPoints->begin());
+                            for (auto pnt : *another_wave->currentPoints) {
+                                this->matrix.at<int>(pnt) = this->id;
+                            }
+                            another_wave->currentPoints->clear();
+                        }
+                    }
                 }
-                another_wave->currentPoints->clear();
+                hasNext = true;
             }
         }
     }
 
     // if the end of wave
-    if (!hasNext)
+//    if (!hasNext)
+//        this->placeNode();
+    if (this->stepNumber % 10 == 0) {
         this->placeNode();
-    else if (this->stepNumber % 10 == 0) {
-        this->placeNode();
+    }
+
+    this->markCurrentPointsAsCleared();
+
+    if (this->metaWave->onWavePointsCleared) {
+        this->metaWave->onWavePointsCleared(this);
     }
 
     this->currentPoints = currentPoints == &this->points1 ? &this->points2 : &this->points1;
@@ -201,7 +224,7 @@ vector<Wave *> Wave::split() {
             auto point1 = newWavePoints[j];
             for (int i = 0; i < points.size(); ++i) {
                 auto point2 = points[i];
-                if (point1.isNeighboor(point2)) {
+                if (point1.isNeighboor(point2, 2)) {
                     newWavePoints.push_back(point2);
                     points.erase(points.begin() + i);
                     --i;
@@ -213,8 +236,10 @@ vector<Wave *> Wave::split() {
             waves.push_back(this);
             return waves;
         } else {
-            Wave *wave = new Wave(this->matrix, newWavePoints, this->skeleton);
+            Wave *wave = new Wave(this->matrix, newWavePoints, this->skeleton, this->metaWave);
+            wave->lastNode = this->lastNode;
             waves.push_back(wave);
+            newWavePoints.clear();
         }
     } while (points.size() > 0);
     return waves;
@@ -239,9 +264,15 @@ Point Wave::getCenterPoint() {
     return sumPoint;
 }
 
-void Wave::markCurrentPointsAsVisited(uchar waveId) {
+void Wave::markCurrentPointsAsVisited() {
     for (auto point : *this->currentPoints) {
-        matrix.at<uchar>(point) = waveId;
+        matrix.at<int>(point) = this->id;
+    }
+}
+
+void Wave::markCurrentPointsAsCleared() {
+    for (auto point : *this->currentPoints) {
+        matrix.at<int>(point) = 255;
     }
 }
 
