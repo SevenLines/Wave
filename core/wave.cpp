@@ -133,6 +133,7 @@ const vector<Wave *> &MetaWave::waves() {
 
 bool Wave::next(vector<Wave *> &waves) {
     ++this->stepNumber;
+    this->edgedPixelsCount = 0;
 
     if (this->currentPoints->size() <= 0) {
         return false;
@@ -149,10 +150,16 @@ bool Wave::next(vector<Wave *> &waves) {
                 continue;
 
             auto neighboorPoint = point.getNeighboor(i);
+            if (neighboorPoint.x < 0
+                || neighboorPoint.y < 0
+                || neighboorPoint.x >= this->matrix.cols
+                || neighboorPoint.y >= this->matrix.rows)
+                continue;
             auto cell_value = this->matrix.at<int>(neighboorPoint);
 
 
             if (cell_value == WAVE_EMPTY_CELL_VALUE) {
+                ++this->edgedPixelsCount;
                 continue;
             } else if (cell_value == WAVE_FILLED_CELL_VALUE) {
                 this->matrix.at<int>(neighboorPoint) = this->id;
@@ -216,6 +223,12 @@ vector<Wave *> Wave::split() {
         return vector<Wave *>();
     }
 
+    if (this->requireSplitCheck()) {
+        vector<Wave *> vect;
+        vect.push_back(this);
+        return vect;
+    }
+
     do {
         newWavePoints.push_back(points[0]);
         points.erase(points.begin());
@@ -274,6 +287,10 @@ void Wave::markCurrentPointsAsCleared() {
     for (auto point : *this->currentPoints) {
         matrix.at<int>(point) = 255;
     }
+}
+
+bool Wave::requireSplitCheck() {
+    return this->edgedPixelsCount >= 4;
 }
 
 void Node::bind(Node *node) {

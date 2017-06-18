@@ -13,7 +13,6 @@ WaveProcessor::WaveProcessor(cv::Mat image) {
 Skeleton *WaveProcessor::process() {
     cv::Mat grey;
     cv::cvtColor(image, grey, CV_BGR2GRAY);
-    cv::imwrite("/home/m/QtProjects/Wave2/tests/out.png", grey);
 
     cv::Mat lookUpTable(1, 256, CV_8U);
     uchar *p = lookUpTable.data;

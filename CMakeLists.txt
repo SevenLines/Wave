@@ -39,3 +39,11 @@ add_executable(
 # Use the Widgets module from Qt 5.
 target_link_libraries(wave Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Test ${OpenCV_LIBS} )
 target_link_libraries(test_wave Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Test ${OpenCV_LIBS} )
+
+find_program(VALGRIND "valgrind")
+if(VALGRIND)
+    add_custom_target(valgrind_memcheck
+            COMMAND "${VALGRIND}" --tool=memcheck --leak-check=yes --num-callers=20 --track-fds=yes $<TARGET_FILE:test_wave>)
+    add_custom_target(valgrind_profile
+            COMMAND "${VALGRIND}" --tool=callgrind --callgrind-out-file=callgrind.out $<TARGET_FILE:test_wave>)
+endif()

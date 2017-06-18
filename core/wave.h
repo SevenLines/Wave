@@ -86,6 +86,7 @@ private:
     static unsigned int WaveCounter;
 
     int stepNumber = 0;
+    bool edgedPixelsCount = 0;
     WaveInfo gWaveInfo;
     SkeletizationOptions gOptions;
 
@@ -108,6 +109,7 @@ public:
     const vector<Point> &points();
 
     bool next(vector<Wave *> &waves);
+    bool requireSplitCheck();
 
     Node *placeNode();
     Point getCenterPoint();
