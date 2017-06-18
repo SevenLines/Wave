@@ -6,7 +6,7 @@
 #define TESTPROJECT_WAVEPROCESSOR_H
 
 #include <opencv2/opencv.hpp>
-#include "core/wave.h"
+#include "core/Wave.h"
 #include <functional>
 
 class WaveProcessor {

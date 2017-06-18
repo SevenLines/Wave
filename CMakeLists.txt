@@ -18,8 +18,13 @@ find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Test)
 find_package(OpenCV REQUIRED)
 
-set(CORE_SOURCES core/wave.cpp
-        core/waveprocessor.cpp)
+set(CORE_SOURCES
+        core/Wave.cpp
+        core/Waveprocessor.cpp
+        core/MetaWave.cpp
+        core/Point.cpp
+        core/Skeleton.cpp
+        )
 
 # Tell CMake to create the helloworld executable
 add_executable(wave

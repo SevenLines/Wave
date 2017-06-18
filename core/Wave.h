@@ -5,6 +5,8 @@
 #include <list>
 #include <opencv2/opencv.hpp>
 #include <functional>
+#include "Point.h"
+#include "Skeleton.h"
 
 using namespace std;
 
@@ -45,39 +47,6 @@ struct WaveInfo {
     list<int> memory;
 };
 
-class Point : public cv::Point {
-public:
-    Point(int x, int y);
-
-    Point getNeighboor(int i);
-
-    bool isNeighboor(Point &point, int delta=1);
-};
-
-struct Node;
-
-class Skeleton {
-public:
-    vector<Node *> nodes;
-
-    Node *addNode(Point &point);
-
-    ~Skeleton();
-};
-
-class Node {
-private:
-    Skeleton *skeleton;
-public:
-    Point point;
-    vector<Node *> nodes;
-
-    void bind(Node *node);
-
-    Node(Point &point, Skeleton *skeleton);
-};
-
-
 class MetaWave;
 
 class Wave /*волна*/
@@ -115,25 +84,9 @@ public:
     Point getCenterPoint();
 
     vector<Wave *> split();
-    void markCurrentPointsAsVisited();
+
     void markCurrentPointsAsCleared();
 
-};
-
-class MetaWave {
-private:
-    int step = 0;
-    cv::Mat image;
-    vector<Wave *> _waves;
-    Skeleton* skeleton;
-public:
-    MetaWave(cv::Mat image, vector<Point> points, Skeleton* skeleton);
-    std::function<void(Wave *wave)> onWaveNext = nullptr;
-    std::function<void(Wave *wave)> onWavePointsCleared = nullptr;
-
-    const vector<Wave *> &waves();
-
-    bool next();
 };
 
 

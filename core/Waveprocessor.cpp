@@ -3,7 +3,8 @@
 //
 
 #include <functional>
-#include "waveprocessor.h"
+#include "Waveprocessor.h"
+#include "core/MetaWave.h"
 
 WaveProcessor::WaveProcessor(cv::Mat image) {
     this->image = image;

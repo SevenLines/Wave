@@ -5,7 +5,7 @@
 #include <QGraphicsPixmapItem>
 #include <QWidget>
 #include <graphics_items/QGraphicsCursorItem.h>
-#include <core/wave.h>
+#include <core/Wave.h>
 
 class DrawCanvas : public QGraphicsView {
 Q_OBJECT

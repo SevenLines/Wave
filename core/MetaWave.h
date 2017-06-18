@@ -1,0 +1,30 @@
+//
+// Created by m on 18.06.17.
+//
+
+#ifndef TESTPROJECT_METAWAVE_H
+#define TESTPROJECT_METAWAVE_H
+
+
+#include "Wave.h"
+#include <vector>
+
+class MetaWave {
+private:
+    int step = 0;
+    cv::Mat image;
+    vector<Wave *> _waves;
+    Skeleton* skeleton;
+public:
+    MetaWave(cv::Mat image, vector<Point> points, Skeleton* skeleton);
+    std::function<void(Wave *wave)> onWaveNext = nullptr;
+    std::function<void(Wave *wave)> onWavePointsCleared = nullptr;
+
+    const vector<Wave *> &waves();
+
+    bool next();
+};
+
+
+
+#endif //TESTPROJECT_METAWAVE_H

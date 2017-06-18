@@ -1,7 +1,8 @@
 #include <math.h>
 #include <time.h>
 #include <algorithm>
-#include "core/wave.h"
+#include "core/Wave.h"
+#include "MetaWave.h"
 
 unsigned int Wave::WaveCounter = 2;
 
@@ -46,90 +47,7 @@ SkeletizationOptions::SkeletizationOptions(float Intensety, float MaxDeviation, 
 
 }
 
-Point::Point(int x, int y) {
-    this->x = x;
-    this->y = y;
-}
 
-Point Point::getNeighboor(int i) {
-    switch (i) {
-        case 1:
-            return Point(x - 1, y - 1);
-        case 2:
-            return Point(x, y - 1);
-        case 3:
-            return Point(x + 1, y - 1);
-        case 4:
-            return Point(x + 1, y);
-        case 5:
-            return Point(x + 1, y + 1);
-        case 6:
-            return Point(x, y + 1);
-        case 7:
-            return Point(x - 1, y + 1);
-        case 8:
-            return Point(x - 1, y);
-        default:
-            return *this;
-    }
-}
-
-bool Point::isNeighboor(Point &point, int delta) {
-    if (this->x == point.x && this->y == point.y)
-        return false;
-    return abs(this->x - point.x) <= delta && abs(this->y - point.y) <= delta;
-}
-
-bool MetaWave::next() {
-    bool hasNext = false;
-    ++this->step;
-    // made another wave iteration
-    for (int i = 0; i < this->_waves.size(); ++i) {
-        auto &wave = this->_waves[i];
-        hasNext |= wave->next(this->_waves);
-        if (this->onWaveNext) {
-            this->onWaveNext(wave);
-        }
-    }
-
-    // join waves
-
-    // split newly create waves
-    vector<Wave *> newWaveList;
-    for (auto wave : this->_waves) {
-        auto waves = wave->split();
-        newWaveList.insert(newWaveList.end(), waves.begin(), waves.end());
-    }
-
-    // remove all unused waves
-    for (auto wave : this->_waves) {
-        if (find(newWaveList.begin(), newWaveList.end(), wave) == newWaveList.end()) {
-            delete wave;
-        }
-    }
-    this->_waves.clear();
-    this->_waves = newWaveList;
-
-    for (int i = 0; i < this->_waves.size(); ++i) {
-        auto &wave = this->_waves[i];
-        wave->markCurrentPointsAsCleared();
-        //wave->markCurrentPointsAsVisited((int) (i + 1));
-    }
-
-    return hasNext;
-}
-
-MetaWave::MetaWave(cv::Mat image, vector<Point> points, Skeleton *skeleton) {
-    image.copyTo(this->image);
-    Wave *wave = new Wave(this->image, points, skeleton, this);
-    wave->placeNode();
-    wave->markCurrentPointsAsCleared();
-    this->_waves.push_back(wave);
-}
-
-const vector<Wave *> &MetaWave::waves() {
-    return this->_waves;
-}
 
 bool Wave::next(vector<Wave *> &waves) {
     ++this->stepNumber;
@@ -277,12 +195,6 @@ Point Wave::getCenterPoint() {
     return sumPoint;
 }
 
-void Wave::markCurrentPointsAsVisited() {
-    for (auto point : *this->currentPoints) {
-        matrix.at<int>(point) = this->id;
-    }
-}
-
 void Wave::markCurrentPointsAsCleared() {
     for (auto point : *this->currentPoints) {
         matrix.at<int>(point) = 255;
@@ -293,24 +205,3 @@ bool Wave::requireSplitCheck() {
     return this->edgedPixelsCount >= 4;
 }
 
-void Node::bind(Node *node) {
-    this->nodes.push_back(node);
-    node->nodes.push_back(this);
-}
-
-
-Node::Node(Point &_point, Skeleton *_skeleton) : point(_point.x, _point.y), skeleton(_skeleton) {
-}
-
-Node *Skeleton::addNode(Point &point) {
-    auto node = new Node(point, this);
-    nodes.push_back(node);
-    return node;
-}
-
-Skeleton::~Skeleton() {
-    for (auto node : nodes) {
-        delete node;
-    }
-    nodes.clear();
-}

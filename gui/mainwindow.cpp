@@ -1,4 +1,4 @@
-#include <core/waveprocessor.h>
+#include <core/Waveprocessor.h>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
