@@ -26,19 +26,6 @@ Wave::Wave(cv::Mat matrix, vector<Point> points, Skeleton *skeleton, MetaWave *m
     gOptions.MaxDeviation = 0.5;
     gOptions.Memory = 10;
     gOptions.SetIntencity = 0.5;
-
-    /* оптимизируем */
-//    points1.reserve(1000);
-//    points2.reserve(1000);
-//    points = &points1;
-//    newList = &points2;
-    /* используем указатели 
-     * в результате за всю жизнь
-     * волны существуе всего 
-     * два массива под точки   
-    */
-
-//    gWaveID = 0;
 }
 
 
@@ -73,11 +60,12 @@ bool Wave::next(vector<shared_ptr<Wave>> &waves) {
                 continue;
             auto cell_value = this->matrix.at<int>(neighboorPoint);
 
-
             if (cell_value == WAVE_EMPTY_CELL_VALUE) {
                 ++this->edgedPixelsCount;
                 continue;
-            } else if (cell_value == WAVE_FILLED_CELL_VALUE) {
+            }
+
+            if (cell_value == WAVE_FILLED_CELL_VALUE) {
                 this->matrix.at<int>(neighboorPoint) = this->id;
                 this->nextPoints->push_back(neighboorPoint);
                 hasNext = true;
@@ -105,11 +93,16 @@ bool Wave::next(vector<shared_ptr<Wave>> &waves) {
         }
     }
 
-    // if the end of wave
-//    if (!hasNext)
-//        this->placeNode();
-    if (this->stepNumber % 5 == 0) {
-        this->placeNode();
+    auto actual_size = this->gWaveInfo.waveStyle == WaveStyle::Diamond ?
+                       this->currentPoints->size() / 2 : this->currentPoints->size();
+    if (this->stepsSinceLastPlacement >= actual_size / 3) {
+        auto avg_size = accumulate(this->lastWaveSizes.begin(), this->lastWaveSizes.end(), 0.0) / this->lastWaveSizes.size();
+        // if wave changes to quickly dont place points
+        if (fabs(1.0 - (avg_size / actual_size)) < 0.3) {
+            this->placeNode();
+        }
+    } else {
+        ++this->stepsSinceLastPlacement;
     }
 
     this->markCurrentPointsAsCleared();
@@ -118,10 +111,18 @@ bool Wave::next(vector<shared_ptr<Wave>> &waves) {
         this->metaWave->onWavePointsCleared(this);
     }
 
+    this->lastWaveSizes.push_back(actual_size);
+
     this->currentPoints = currentPoints == &this->points1 ? &this->points2 : &this->points1;
     this->nextPoints = nextPoints == &this->points1 ? &this->points2 : &this->points1;
     this->gWaveInfo.waveStyle = this->gWaveInfo.waveStyle == WaveStyle::Diamond
                                 ? WaveStyle::Square : WaveStyle::Diamond;
+
+
+
+    if (this->lastWaveSizes.size() > 10) {
+        this->lastWaveSizes.pop_front();
+    }
 
     return hasNext;
 }
@@ -180,6 +181,7 @@ shared_ptr<Node> Wave::placeNode() {
     if (this->lastNode)
         this->lastNode->bind(node);
     this->lastNode = node;
+    this->stepsSinceLastPlacement = 0;
     return node;
 }
 

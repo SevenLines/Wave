@@ -8,7 +8,7 @@
 
 
 void TestWave::testWave() {
-    cv::Mat image = cv::imread("/home/m/QtProjects/Wave2/tests/sample3.png", CV_LOAD_IMAGE_COLOR);
+    cv::Mat image = cv::imread("/home/m/QtProjects/Wave2/tests/sample4.png", CV_LOAD_IMAGE_COLOR);
     auto processor = WaveProcessor(image);
     cv::Vec3b colors[] = {
             cv::Vec3b(235,192,91),

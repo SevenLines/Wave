@@ -56,6 +56,8 @@ private:
     static unsigned int WaveCounter;
 
     int stepNumber = 0;
+    int stepsSinceLastPlacement = 0;
+    list<unsigned long> lastWaveSizes;
     bool edgedPixelsCount = 0;
     WaveInfo gWaveInfo;
     SkeletizationOptions gOptions;

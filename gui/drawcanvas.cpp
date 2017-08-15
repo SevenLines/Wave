@@ -106,12 +106,12 @@ void DrawCanvas::_initScene() {
 
     this->pixmapItem = new QGraphicsPixmapItem(0);
     this->_scene.addItem(this->pixmapItem);
-    this->drawingState.pen = QPen(QBrush(Qt::black), 10,
+    this->drawingState.pen = QPen(QBrush(Qt::black), 30,
                                   Qt::PenStyle::SolidLine,
                                   Qt::PenCapStyle::RoundCap,
                                   Qt::PenJoinStyle::RoundJoin);
 
-    this->penSizeItem = new QGraphicsCursorItem(QRectF(0, 0, 10, 10));
+    this->penSizeItem = new QGraphicsCursorItem(QRectF(0, 0, 30, 30));
     this->_scene.addItem(this->penSizeItem);
     skeletonNode = new QGraphicsItemGroup();
     this->_scene.addItem(this->skeletonNode);
