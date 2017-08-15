@@ -3,7 +3,7 @@
 //
 
 #include "MetaWave.h"
-
+using namespace std;
 
 bool MetaWave::next() {
     bool hasNext = false;
@@ -13,26 +13,19 @@ bool MetaWave::next() {
         auto &wave = this->_waves[i];
         hasNext |= wave->next(this->_waves);
         if (this->onWaveNext) {
-            this->onWaveNext(wave);
+            this->onWaveNext(wave.get());
         }
     }
 
     // join waves
 
     // split newly create waves
-    vector<Wave *> newWaveList;
+    vector<shared_ptr<Wave>> newWaveList;
     for (auto wave : this->_waves) {
         auto waves = wave->split();
         newWaveList.insert(newWaveList.end(), waves.begin(), waves.end());
     }
 
-    // remove all unused waves
-    for (auto wave : this->_waves) {
-        if (find(newWaveList.begin(), newWaveList.end(), wave) == newWaveList.end()) {
-            delete wave;
-        }
-    }
-    this->_waves.clear();
     this->_waves = newWaveList;
 
     for (int i = 0; i < this->_waves.size(); ++i) {
@@ -45,12 +38,9 @@ bool MetaWave::next() {
 
 MetaWave::MetaWave(cv::Mat image, vector<Point> points, Skeleton *skeleton) {
     image.copyTo(this->image);
-    Wave *wave = new Wave(this->image, points, skeleton, this);
+    auto wave = make_unique<Wave>(this->image, points, skeleton, this);
     wave->placeNode();
     wave->markCurrentPointsAsCleared();
-    this->_waves.push_back(wave);
+    this->_waves.push_back(std::move(wave));
 }
 
-const vector<Wave *> &MetaWave::waves() {
-    return this->_waves;
-}

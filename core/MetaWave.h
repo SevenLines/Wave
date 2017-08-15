@@ -13,14 +13,12 @@ class MetaWave {
 private:
     int step = 0;
     cv::Mat image;
-    vector<Wave *> _waves;
+    vector<shared_ptr<Wave>> _waves;
     Skeleton* skeleton;
 public:
     MetaWave(cv::Mat image, vector<Point> points, Skeleton* skeleton);
-    std::function<void(Wave *wave)> onWaveNext = nullptr;
-    std::function<void(Wave *wave)> onWavePointsCleared = nullptr;
-
-    const vector<Wave *> &waves();
+    std::function<void(Wave*)> onWaveNext = nullptr;
+    std::function<void(Wave*)> onWavePointsCleared = nullptr;
 
     bool next();
 };

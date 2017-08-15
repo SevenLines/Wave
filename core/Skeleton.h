@@ -7,6 +7,7 @@
 
 #include "Point.h"
 #include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -14,21 +15,21 @@ struct Node;
 
 class Skeleton {
 public:
-    vector<Node *> nodes;
+    vector<shared_ptr<Node>> nodes;
 
-    Node *addNode(Point &point);
+    shared_ptr<Node> addNode(Point &point);
 
     ~Skeleton();
 };
 
-class Node {
+class Node : public enable_shared_from_this<Node> {
 private:
     Skeleton *skeleton;
 public:
     Point point;
-    vector<Node *> nodes;
+    vector<shared_ptr<Node>> nodes;
 
-    void bind(Node *node);
+    void bind(shared_ptr<Node> node);
 
     Node(Point &point, Skeleton *skeleton);
 };

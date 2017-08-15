@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <opencv2/opencv.hpp>
+#include <memory>
 #include <functional>
 #include "Point.h"
 #include "Skeleton.h"
@@ -49,7 +50,7 @@ struct WaveInfo {
 
 class MetaWave;
 
-class Wave /*волна*/
+class Wave : public enable_shared_from_this<Wave> /*волна*/
 {
 private:
     static unsigned int WaveCounter;
@@ -66,7 +67,7 @@ private:
     vector<Point> *nextPoints;
     vector<int> waveIdsToAdd;
     MetaWave *metaWave;
-    Node *lastNode = nullptr;
+    shared_ptr<Node> lastNode = nullptr;
 
     Skeleton *skeleton = nullptr;
 public:
@@ -77,13 +78,13 @@ public:
 
     const vector<Point> &points();
 
-    bool next(vector<Wave *> &waves);
+    bool next(vector<shared_ptr<Wave>> &waves);
     bool requireSplitCheck();
 
-    Node *placeNode();
+    shared_ptr<Node> placeNode();
     Point getCenterPoint();
 
-    vector<Wave *> split();
+    vector<shared_ptr<Wave>> split();
 
     void markCurrentPointsAsCleared();
 

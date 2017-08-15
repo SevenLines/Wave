@@ -47,9 +47,7 @@ SkeletizationOptions::SkeletizationOptions(float Intensety, float MaxDeviation, 
 
 }
 
-
-
-bool Wave::next(vector<Wave *> &waves) {
+bool Wave::next(vector<shared_ptr<Wave>> &waves) {
     ++this->stepNumber;
     this->edgedPixelsCount = 0;
 
@@ -132,18 +130,18 @@ const vector<Point> &Wave::points() {
     return *this->currentPoints;
 }
 
-vector<Wave *> Wave::split() {
-    vector<Wave *> waves;
+vector<shared_ptr<Wave>> Wave::split() {
+    vector<shared_ptr<Wave>> waves;
     vector<Point> points = *this->currentPoints;
     vector<Point> newWavePoints;
 
     if (points.size() == 0) {
-        return vector<Wave *>();
+        return vector<shared_ptr<Wave>>();
     }
 
     if (this->requireSplitCheck()) {
-        vector<Wave *> vect;
-        vect.push_back(this);
+        vector<shared_ptr<Wave>> vect;
+        vect.push_back(this->shared_from_this());
         return vect;
     }
 
@@ -164,10 +162,10 @@ vector<Wave *> Wave::split() {
         }
 
         if (this->currentPoints->size() == newWavePoints.size()) {
-            waves.push_back(this);
+            waves.push_back(this->shared_from_this());
             return waves;
         } else {
-            Wave *wave = new Wave(this->matrix, newWavePoints, this->skeleton, this->metaWave);
+            auto wave = make_shared<Wave>(this->matrix, newWavePoints, this->skeleton, this->metaWave);
             wave->lastNode = this->lastNode;
             waves.push_back(wave);
             newWavePoints.clear();
@@ -176,7 +174,7 @@ vector<Wave *> Wave::split() {
     return waves;
 }
 
-Node *Wave::placeNode() {
+shared_ptr<Node> Wave::placeNode() {
     auto centerPoint = this->getCenterPoint();
     auto node = this->skeleton->addNode(centerPoint);
     if (this->lastNode)

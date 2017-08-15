@@ -9,13 +9,16 @@
 #include "core/Wave.h"
 #include <functional>
 
+using namespace std;
+
 class WaveProcessor {
 public:
     WaveProcessor(cv::Mat image);
 
-    Skeleton * process();
-    function<void(Wave *wave)>onWaveNext= nullptr;
-    function<void(Wave *wave)>onWavePointsCleared= nullptr;
+    Skeleton *process();
+
+    function<void(Wave*)> onWaveNext = nullptr;
+    function<void(Wave*)> onWavePointsCleared = nullptr;
 
     cv::Mat image;
 };
